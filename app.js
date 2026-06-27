@@ -6,10 +6,7 @@ const app=express();
 app.use(express.json());
 const SECRET="mahdi_secret_key";
 //temloye database
-let users=[
-    {id:1,username:"mahdi keshavarz",password:1234},
-    {id:2,username:"sepide shahir",password:2231}
-]
+let users=[];
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 app.post("/register",async(req,res)=>{
     const{username,password,id}=req.body
@@ -28,7 +25,7 @@ app.post("/login",async(req,res)=>{
     const {username,password}=req.body;
     const user=users.find(u=>u.username==username)
     if(!user){return res.status(400).json({message:"not found"})}
-    const isMatch = await bcrypt.compare(password, user.password)
+    const isMatch = await bcryptjs.compare(password, user.password)
   if(!isMatch) {
     return res.status(400).json({message: "wrong password"})
   }
@@ -37,6 +34,28 @@ app.post("/login",async(req,res)=>{
   res.json({message: "logged in", token})
 })
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+// Middleware برای چک کردن توکن
+const verifyToken = (req, res, next) => {
+  const token = req.headers["authorization"]
+  
+  if(!token) {
+    return res.status(401).json({message: "توکن نداری!"})
+  }
+
+  try {
+    const decoded = jwt.verify(token, SECRET)
+    req.user = decoded
+    next()
+  } catch(err) {
+    return res.status(401).json({message: "توکن نامعتبره!"})
+  }
+}
+
+// Protected Route
+app.get("/profile", verifyToken, (req, res) => {
+  res.json({message: "خوش اومدی!", user: req.user})
+})
 app.listen(port,()=>{
     console.log("program is running on port:3000")
 })
